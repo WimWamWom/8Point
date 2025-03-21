@@ -1,14 +1,24 @@
-from discord import app_commands
 import discord
-from dotenv import load_dotenv
+from discord import app_commands
+import logging
 import os
+from dotenv import load_dotenv
 from bot_def import create_clan_embed, create_list_embed
 from bot_def_clan import get_clan_info, get_clan_name_and_tag, refresh_rolls, load_rolls
 from eight_point_json import load_clans, save_clans
 
+
+
+log_path = os.path.join(os.path.dirname(__file__), '..', 'log.txt')
+logging.basicConfig(
+    filename=log_path,
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
-
 guild_ids_str = str(os.getenv('guildIDs'))
 guild_ids = guild_ids_str.split(',')
 
@@ -16,17 +26,21 @@ intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+
 class ClanSelect(discord.ui.Select):
     def __init__(self, options):
         super().__init__(placeholder="Wähle einen Clan", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)  # Antwort wird verzögert
+        await interaction.response.defer(ephemeral=True)
         clan_tag = self.values[0]
+        
+        # Logge den Befehl
+        logging.info(f'Befehl "ClanSelect" ausgeführt von {interaction.user} mit Clan: {clan_tag}')
         
         if clan_tag == "all":
             embeds = []
-            for option in self.options[1:]:  # Alle Clans aus den Optionen
+            for option in self.options[1:]:
                 embed = create_clan_embed(get_clan_info(option.value))
                 embeds.append(embed) 
             
@@ -35,18 +49,16 @@ class ClanSelect(discord.ui.Select):
             else:
                 await interaction.followup.send("Keine Clan-Informationen gefunden.", ephemeral=True)
 
-            # Den Placeholder auf "Alle Clans anzeigen" setzen, wenn "all" gewählt wurde
             self.placeholder = "Alle Clans anzeigen"
-            await interaction.message.edit(view=self.view)  # Die Ansicht aktualisieren
+            await interaction.message.edit(view=self.view)
         else:
             clan_info = get_clan_info(clan_tag)
             if clan_info:
                 embed = create_clan_embed(clan_info)
-                await interaction.message.edit(embed=embed, view=self.view)  # Nachricht bearbeiten
+                await interaction.message.edit(embed=embed, view=self.view)
 
-                # Hier den placeholder dynamisch auf den Clan-Namen ändern
                 self.placeholder = f"Ausgewählter Clan: {clan_info['name']}"
-                await interaction.message.edit(view=self.view)  # Die Ansicht aktualisieren
+                await interaction.message.edit(view=self.view)  
             else:
                 await interaction.followup.send("Clan-Information nicht gefunden.", ephemeral=True)
 
@@ -71,6 +83,9 @@ class MemberSelect(discord.ui.Select):
         await interaction.response.defer(ephemeral=True)
         role = self.values[0]
 
+        # Logge den Befehl
+        logging.info(f'Befehl "MemberSelect" ausgeführt von {interaction.user} mit Rolle: {role}')
+        
         if role == "Alle":
 
             embeds = []
@@ -103,14 +118,13 @@ class MemberSelect(discord.ui.Select):
             await interaction.message.edit(embed=embed)
 
         self.placeholder = f"Ausgewählte Rolle: {role}"
-        await interaction.message.edit(view=self.view)  # Die Ansicht aktualisieren
+        await interaction.message.edit(view=self.view)
 
 
 class MemberView(discord.ui.View):
     def __init__(self):
         super().__init__()
         self.add_item(MemberSelect())
-
 
 for guild_id in guild_ids:
     @tree.command(name="clan-übersicht", description="Zeige ein Übersicht der Clan Informationen an.", guild=discord.Object(id=int(guild_id)))
@@ -130,6 +144,9 @@ for guild_id in guild_ids:
                 await interaction.followup.send("Bitte gib mindestens ein Clan-Kürzel ein!", ephemeral=True)
                 return
             clan_list = [tag.strip() for tag in clan_tags.split(",")]
+
+        logging.info(f'Befehl "clan-übersicht" ausgeführt von {interaction.user} mit {clan_option.value} und {clan_list}')
+        print(f'Befehl "clan-übersicht" ausgeführt von {interaction.user} mit {clan_option.value} und {clan_list}')
 
         embeds = []
         droplist_options = []
@@ -176,6 +193,8 @@ for guild_id in guild_ids:
         position: int = 0
     ):
         await interaction.response.defer()
+        logging.info(f'Befehl "8point-clans" ausgeführt von {interaction.user} mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
+        print(f'Befehl "8point-clans" ausgeführt von {interaction.user} mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
 
         clans = load_clans()
         guild = interaction.guild
@@ -259,6 +278,8 @@ for guild_id in guild_ids:
     async def clan_infos(interaction: discord.Interaction, members: app_commands.Choice[str], aktualisieren: str = "Nein"):
 
         await interaction.response.defer()
+        logging.info(f'Befehl "mitglieder" ausgeführt von {interaction.user} mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
+        print(f'Befehl "mitglieder" ausgeführt von {interaction.user} mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
 
         view = MemberView()
         if aktualisieren.lower() == "ja":
@@ -306,12 +327,8 @@ for guild_id in guild_ids:
             embed = create_list_embed("Mitglieder", member)
             await interaction.followup.send(embed=embed, view= view)
 
-
-
-
 @client.event
 async def on_ready():
-  
     print("Synchronisiere neue Befehle...")
     i = 1
     for guild_id in guild_ids:
@@ -319,5 +336,6 @@ async def on_ready():
             print(f"synchronisiert für Server {i}")
             i += 1 
     print("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
+
 
 client.run(os.getenv('bot_token'))
