@@ -120,7 +120,6 @@ class MemberSelect(discord.ui.Select):
         self.placeholder = f"Ausgewählte Rolle: {role}"
         await interaction.message.edit(view=self.view)
 
-
 class MemberView(discord.ui.View):
     def __init__(self):
         super().__init__()
