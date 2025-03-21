@@ -1,5 +1,16 @@
 # [8Point Discord Bot](https://link.clashofclans.com/en/?action=OpenClanProfile&tag=298QPUCCC)
 
+## Inhalt
+- [Verwendung](#Verwendung)
+- [Befehle](#Befehle)
+
+
+## Verwendung
+Um de nBot zu starten, wird ein [Discord bot](https://discord.com/developers/applications) benötigt, von diesem Braucht man dann den Token. 
+Auch wird einer [Clash of Clans API](https://developer.clashofclans.com/#/) benötigt. Und eine Server ID/ Guild ID, welche man aus discord kopieren kann.
+
+
+
 ## Befehle
 - [/mitglieder](#mitglieder)
 - [/8point-clans](#8point-clans)
