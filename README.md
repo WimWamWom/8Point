@@ -8,6 +8,7 @@
 ## Verwendung
 Um de nBot zu starten, wird ein [Discord bot](https://discord.com/developers/applications) benötigt, von diesem Braucht man dann den Token. 
 Auch wird einer [Clash of Clans API](https://developer.clashofclans.com/#/) benötigt. Und eine Server ID/ Guild ID, welche man aus discord kopieren kann.
+Diese 3 Sachen setzt man dann in eine .env datei, welche sich relativ gesehen in dem Überordern des Programms befidnen muss.
 
 
 
