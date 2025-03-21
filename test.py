@@ -9,6 +9,9 @@ from eight_point_json import load_clans, save_clans
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
 
+guild_ids_str = str(os.getenv('guildIDs'))
+guild_ids = guild_ids_str.split(',')
+
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
@@ -71,22 +74,12 @@ class MemberSelect(discord.ui.Select):
         if role == "Alle":
 
             embeds = []
-            member = load_rolls("leader")
-            embed = create_list_embed("Anführer", member)
-            embeds.append(embed)
+            roles = ["leader", "vize", "elders", "members"]
+            for role in roles:
+                members = load_rolls(role)
+                embed = create_list_embed(role.capitalize(), members)
+                embeds.append(embed)
 
-        
-            member = load_rolls("vize")
-            embed = create_list_embed("Vize Anführer", member)
-            embeds.append(embed)
-
-            member = load_rolls("elders")
-            embed = create_list_embed("Älteste", member)
-            embeds.append(embed)
-
-            member = load_rolls("members")
-            embed = create_list_embed("Mitglieder", member)
-            embeds.append(embed)
             await interaction.message.edit(embeds=embeds)
 
         elif role == "Anführer":
@@ -119,198 +112,199 @@ class MemberView(discord.ui.View):
         self.add_item(MemberSelect())
 
 
-@tree.command(name="clan-übersicht", description="Zeige ein Übersicht der Clan Informationen an.", guild=discord.Object(id=int(os.getenv('guildID'))))
-@app_commands.describe(clan_option="Wähle entweder '8Point Clans' oder gib eigene Kürzel ein")
-@app_commands.choices(clan_option=[
-    app_commands.Choice(name="8Point Clans", value="8point"),
-    app_commands.Choice(name="Kürzel eingeben (mit  , seperieren)", value="custom")
-])
-async def clan_infos(interaction: discord.Interaction, clan_option: app_commands.Choice[str], clan_tags: str = None):
+for guild_id in guild_ids:
+    @tree.command(name="clan-übersicht", description="Zeige ein Übersicht der Clan Informationen an.", guild=discord.Object(id=int(guild_id)))
+    @app_commands.describe(clan_option="Wähle entweder '8Point Clans' oder gib eigene Kürzel ein")
+    @app_commands.choices(clan_option=[
+        app_commands.Choice(name="8Point Clans", value="8point"),
+        app_commands.Choice(name="Kürzel eingeben (mit  , seperieren)", value="custom")
+    ])
+    async def clan_infos(interaction: discord.Interaction, clan_option: app_commands.Choice[str], clan_tags: str = None):
 
-    await interaction.response.defer()
+        await interaction.response.defer()
 
-    if clan_option.value == "8point":
-        clan_list = load_clans()
-    elif clan_option.value == "custom":
-        if not clan_tags:
-            await interaction.followup.send("Bitte gib mindestens ein Clan-Kürzel ein!", ephemeral=True)
-            return
-        clan_list = [tag.strip() for tag in clan_tags.split(",")]
-
-    embeds = []
-    droplist_options = []
-    if len(clan_list) > 1:
-        droplist_options.append(discord.SelectOption(label="Alle Clans anzeigen", value="all"))
-
-    for tag in clan_list:
-        clan_info = get_clan_info(tag)
-        if clan_info:
-            embeds.append(create_clan_embed(clan_info))
-            name = get_clan_name_and_tag(tag)
-            droplist_options.append(discord.SelectOption(label=name, value=tag))
-
-    if len(clan_list) > 1:
-        if embeds:
-            view = ClanView(clan_list, droplist_options)
-            await interaction.followup.send(embeds=embeds, view=view)
-        else:
-            await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
-    elif len(clan_list) == 1:
-        if embeds:
-            await interaction.followup.send(embeds=embeds)
-        else:
-            await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
-    else:
-        await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
-
-
-@tree.command(name="8point-clans", description="Clan-Management für 8Point Clans.", guild=discord.Object(id=int(os.getenv('guildID'))))
-@app_commands.describe(
-    action="Wähle eine Aktion", 
-    clan_tag="Gib das Clan-Kürzel an", 
-    position="An welcher Stelle soll der Clan hinzugefügt werden? (1 für Anfang, 0 für Ende)"
-)
-@app_commands.choices(action=[
-    app_commands.Choice(name="Anzeigen", value="show"),
-    app_commands.Choice(name="Hinzufügen", value="add"),
-    app_commands.Choice(name="Entfernen", value="remove")
-])
-async def manage_8point_clans(
-    interaction: discord.Interaction, 
-    action: app_commands.Choice[str], 
-    clan_tag: str = None, 
-    position: int = 0
-):
-    await interaction.response.defer()
-
-    clans = load_clans()
-    guild = interaction.guild
-    user = interaction.user
-    role = discord.utils.get(guild.roles, name="8P Vize")
-
-    if action.value == "show":
-        if not clans:
-            await interaction.followup.send("Es sind keine Clans gespeichert.", ephemeral=True)
-            return
-
-        clan_list = []
-        for tag in clans:
-            clan_name_and_tag = get_clan_name_and_tag(tag)  # Holt den Clan-Namen anhand des Tags
-            if clan_name_and_tag:
-                clan_list.append(clan_name_and_tag  )  # Format: Name (#Kürzel)
-            else:
-                clan_list.append(tag)  # Falls kein Name gefunden wird, nur das Kürzel anzeigen
-
-        emded = create_list_embed("Aktuelle Clans", clan_list)
-        await interaction.followup.send(embed=emded)
-
-    
-    elif action.value == "add":
-
-
-        if role not in user.roles:
-            await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
-            return
-        
-        if not clan_tag:
-            await interaction.followup.send("Bitte gib ein Clan-Kürzel zum Hinzufügen an.", ephemeral=True)
-            return
-
-        if clan_tag in clans:
-            await interaction.followup.send(f"Clan {clan_tag} ist bereits gespeichert.", ephemeral=True)
-            return
-
-        # Standard: Clan wird ans Ende eingefügt
-        if position <= 0 or position > len(clans):
-            clans.append(clan_tag)
-            pos_text = "am Ende"
-        else:
-            clans.insert(position - 1, clan_tag)  # -1 wegen Index-Verschiebung
-            pos_text = f"an Position {position}"
-
-        save_clans(clans)
-        await interaction.followup.send(f"Clan {clan_tag} wurde {pos_text} eingefügt.")
-
-    elif action.value == "remove":
-
-        if role not in user.roles:
-            await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
-            return
-                
-        if not clan_tag:
-            await interaction.followup.send("Bitte gib ein Clan-Kürzel zum Entfernen an.", ephemeral=True)
-            return
-
-        if clan_tag in clans:
-            clans.remove(clan_tag)
-            save_clans(clans)
-            await interaction.followup.send(f"Clan {clan_tag} wurde entfernt.")
-        else:
-            await interaction.followup.send(f"Clan {clan_tag} wurde nicht gefunden.", ephemeral=True)
-
-
-@tree.command(name="mitglieder", description="Zeige ein Übersicht 8Point Mitglieder.", guild=discord.Object(id=int(os.getenv('guildID'))))
-@app_commands.describe(members="Wähle aus welche rolle angezeigt werden soll. Und ob die liste vor der Ausgabe aktualisiert werden soll.[Ja / Nein]")
-@app_commands.choices(members=[
-    app_commands.Choice(name="Alle Mitlglider", value="all"),
-    app_commands.Choice(name="Anführer", value="leader"),
-    app_commands.Choice(name="Vize", value="vize"),
-    app_commands.Choice(name="Älteser", value="elder"),
-    app_commands.Choice(name="Mitlgied", value="member"),
-],
-    aktualisieren =[
-    app_commands.Choice(name="Ja", value="Ja"),
-    app_commands.Choice(name="Nein", value="Nein")
-])
-async def clan_infos(interaction: discord.Interaction, members: app_commands.Choice[str], aktualisieren: str = "Nein"):
-
-    await interaction.response.defer()
-
-    view = MemberView()
-    if aktualisieren.lower() == "ja":
-        clans = load_clans()
-        refresh_rolls(clans)
-
-    if members.value == "all":
+        if clan_option.value == "8point":
+            clan_list = load_clans()
+        elif clan_option.value == "custom":
+            if not clan_tags:
+                await interaction.followup.send("Bitte gib mindestens ein Clan-Kürzel ein!", ephemeral=True)
+                return
+            clan_list = [tag.strip() for tag in clan_tags.split(",")]
 
         embeds = []
-        member = load_rolls("leader")
-        embed = create_list_embed("Anführer", member)
-        embeds.append(embed)
+        droplist_options = []
+        if len(clan_list) > 1:
+            droplist_options.append(discord.SelectOption(label="Alle Clans anzeigen", value="all"))
 
-    
-        member = load_rolls("vize")
-        embed = create_list_embed("Vize Anführer", member)
-        embeds.append(embed)
+        for tag in clan_list:
+            clan_info = get_clan_info(tag)
+            if clan_info:
+                embeds.append(create_clan_embed(clan_info))
+                name = get_clan_name_and_tag(tag)
+                droplist_options.append(discord.SelectOption(label=name, value=tag))
 
-        member = load_rolls("elders")
-        embed = create_list_embed("Älteste", member)
-        embeds.append(embed)
+        if len(clan_list) > 1:
+            if embeds:
+                view = ClanView(clan_list, droplist_options)
+                await interaction.followup.send(embeds=embeds, view=view)
+            else:
+                await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
+        elif len(clan_list) == 1:
+            if embeds:
+                await interaction.followup.send(embeds=embeds)
+            else:
+                await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
+        else:
+            await interaction.followup.send("Kein gültiges Clan-Kürzel gefunden. Bitte überprüfe deine Eingabe.", ephemeral=True)
 
-        member = load_rolls("members")
-        embed = create_list_embed("Mitglieder", member)
-        embeds.append(embed)
-        await interaction.followup.send(embeds=embeds, view= view)
 
-    elif members.value == "leader":
-        member = load_rolls("leader")
-        embed = create_list_embed("Anführer", member)
-        await interaction.followup.send(embed=embed, view= view)
+    @tree.command(name="8point-clans", description="Clan-Management für 8Point Clans.", guild=discord.Object(id=int(guild_id)))
+    @app_commands.describe(
+        action="Wähle eine Aktion", 
+        clan_tag="Gib das Clan-Kürzel an", 
+        position="An welcher Stelle soll der Clan hinzugefügt werden? (1 für Anfang, 0 für Ende)"
+    )
+    @app_commands.choices(action=[
+        app_commands.Choice(name="Anzeigen", value="show"),
+        app_commands.Choice(name="Hinzufügen", value="add"),
+        app_commands.Choice(name="Entfernen", value="remove")
+    ])
+    async def manage_8point_clans(
+        interaction: discord.Interaction, 
+        action: app_commands.Choice[str], 
+        clan_tag: str = None, 
+        position: int = 0
+    ):
+        await interaction.response.defer()
 
-    elif members.value == "vize":
-        member = load_rolls("vize")
-        embed = create_list_embed("Vize Anführer", member)
-        await interaction.followup.send(embed=embed, view= view)
+        clans = load_clans()
+        guild = interaction.guild
+        user = interaction.user
+        role = discord.utils.get(guild.roles, name="8P Vize")
 
-    elif members.value == "elder":
-        member = load_rolls("elders")
-        embed = create_list_embed("Älteste", member)
-        await interaction.followup.send(embed=embed, view= view)
+        if action.value == "show":
+            if not clans:
+                await interaction.followup.send("Es sind keine Clans gespeichert.", ephemeral=True)
+                return
 
-    elif members.value == "member":
-        member = load_rolls("members")
-        embed = create_list_embed("Mitglieder", member)
-        await interaction.followup.send(embed=embed, view= view)
+            clan_list = []
+            for tag in clans:
+                clan_name_and_tag = get_clan_name_and_tag(tag)  # Holt den Clan-Namen anhand des Tags
+                if clan_name_and_tag:
+                    clan_list.append(clan_name_and_tag  )  # Format: Name (#Kürzel)
+                else:
+                    clan_list.append(tag)  # Falls kein Name gefunden wird, nur das Kürzel anzeigen
+
+            emded = create_list_embed("Aktuelle Clans", clan_list)
+            await interaction.followup.send(embed=emded)
+
+        
+        elif action.value == "add":
+
+
+            if role not in user.roles:
+                await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
+                return
+            
+            if not clan_tag:
+                await interaction.followup.send("Bitte gib ein Clan-Kürzel zum Hinzufügen an.", ephemeral=True)
+                return
+
+            if clan_tag in clans:
+                await interaction.followup.send(f"Clan {clan_tag} ist bereits gespeichert.", ephemeral=True)
+                return
+
+            # Standard: Clan wird ans Ende eingefügt
+            if position <= 0 or position > len(clans):
+                clans.append(clan_tag)
+                pos_text = "am Ende"
+            else:
+                clans.insert(position - 1, clan_tag)  # -1 wegen Index-Verschiebung
+                pos_text = f"an Position {position}"
+
+            save_clans(clans)
+            await interaction.followup.send(f"Clan {clan_tag} wurde {pos_text} eingefügt.")
+
+        elif action.value == "remove":
+
+            if role not in user.roles:
+                await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
+                return
+                    
+            if not clan_tag:
+                await interaction.followup.send("Bitte gib ein Clan-Kürzel zum Entfernen an.", ephemeral=True)
+                return
+
+            if clan_tag in clans:
+                clans.remove(clan_tag)
+                save_clans(clans)
+                await interaction.followup.send(f"Clan {clan_tag} wurde entfernt.")
+            else:
+                await interaction.followup.send(f"Clan {clan_tag} wurde nicht gefunden.", ephemeral=True)
+
+
+    @tree.command(name="mitglieder", description="Zeige ein Übersicht 8Point Mitglieder.", guild=discord.Object(id=int(guild_id)))
+    @app_commands.describe(members="Wähle aus welche rolle angezeigt werden soll. Und ob die liste vor der Ausgabe aktualisiert werden soll.[Ja / Nein]")
+    @app_commands.choices(members=[
+        app_commands.Choice(name="Alle Mitlglider", value="all"),
+        app_commands.Choice(name="Anführer", value="leader"),
+        app_commands.Choice(name="Vize", value="vize"),
+        app_commands.Choice(name="Älteser", value="elder"),
+        app_commands.Choice(name="Mitlgied", value="member"),
+    ],
+        aktualisieren =[
+        app_commands.Choice(name="Ja", value="Ja"),
+        app_commands.Choice(name="Nein", value="Nein")
+    ])
+    async def clan_infos(interaction: discord.Interaction, members: app_commands.Choice[str], aktualisieren: str = "Nein"):
+
+        await interaction.response.defer()
+
+        view = MemberView()
+        if aktualisieren.lower() == "ja":
+            clans = load_clans()
+            refresh_rolls(clans)
+
+        if members.value == "all":
+
+            embeds = []
+            member = load_rolls("leader")
+            embed = create_list_embed("Anführer", member)
+            embeds.append(embed)
+
+        
+            member = load_rolls("vize")
+            embed = create_list_embed("Vize Anführer", member)
+            embeds.append(embed)
+
+            member = load_rolls("elders")
+            embed = create_list_embed("Älteste", member)
+            embeds.append(embed)
+
+            member = load_rolls("members")
+            embed = create_list_embed("Mitglieder", member)
+            embeds.append(embed)
+            await interaction.followup.send(embeds=embeds, view= view)
+
+        elif members.value == "leader":
+            member = load_rolls("leader")
+            embed = create_list_embed("Anführer", member)
+            await interaction.followup.send(embed=embed, view= view)
+
+        elif members.value == "vize":
+            member = load_rolls("vize")
+            embed = create_list_embed("Vize Anführer", member)
+            await interaction.followup.send(embed=embed, view= view)
+
+        elif members.value == "elder":
+            member = load_rolls("elders")
+            embed = create_list_embed("Älteste", member)
+            await interaction.followup.send(embed=embed, view= view)
+
+        elif members.value == "member":
+            member = load_rolls("members")
+            embed = create_list_embed("Mitglieder", member)
+            await interaction.followup.send(embed=embed, view= view)
 
 
 
@@ -319,7 +313,11 @@ async def clan_infos(interaction: discord.Interaction, members: app_commands.Cho
 async def on_ready():
   
     print("Synchronisiere neue Befehle...")
-    await tree.sync(guild = discord.Object(id =int(os.getenv('guildID'))))
+    i = 1
+    for guild_id in guild_ids:
+            await tree.sync(guild=discord.Object(id=int(guild_id)))
+            print(f"synchronisiert für Server {i}")
+            i += 1 
     print("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
 
 client.run(os.getenv('bot_token'))
