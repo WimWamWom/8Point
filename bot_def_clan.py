@@ -115,8 +115,7 @@ def refresh_rolls(clan_list):
             elders = [member['name'] for member in data.get('memberList', []) if member.get('role') == 'admin']
             members = [member['name'] for member in data.get('memberList', []) if member.get('role') == 'member']
             # Leader und Co-Leader zur Liste hinzufügen
-            if leader:
-                all_leaders.append(leader)
+            all_leaders.append(leader)
             all_coleaders.extend(coleaders)
             all_elders.extend(elders)
             all_members.extend(members)
