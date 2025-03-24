@@ -36,13 +36,13 @@ class ClanSelect(discord.ui.Select):
         clan_tag = self.values[0]
         
         # Logge den Befehl
-        logging.info(f'Befehl "ClanSelect" ausgeführt von {interaction.user} mit Clan: {clan_tag}')
+        logging.info(f'Befehl "ClanSelect" ausgeführt mit Clan: {clan_tag}')
         
         if clan_tag == "all":
             embeds = []
             for option in self.options[1:]:
                 embed = create_clan_embed(get_clan_info(option.value))
-                embeds.append(embed) 
+                embeds.append(embed)    
             
             if embeds:
                 await interaction.message.edit(embeds=embeds, view=self.view)    
@@ -84,7 +84,7 @@ class MemberSelect(discord.ui.Select):
         role = self.values[0]
 
         # Logge den Befehl
-        logging.info(f'Befehl "MemberSelect" ausgeführt von {interaction.user} mit Rolle: {role}')
+        logging.info(f'Befehl "MemberSelect" ausgeführt mit Rolle: {role}')
         
         if role == "Alle":
 
@@ -144,8 +144,8 @@ for guild_id in guild_ids:
                 return
             clan_list = [tag.strip() for tag in clan_tags.split(",")]
 
-        logging.info(f'Befehl "clan-übersicht" ausgeführt von {interaction.user} mit {clan_option.value} und {clan_list}')
-        print(f'Befehl "clan-übersicht" ausgeführt von {interaction.user} mit {clan_option.value} und {clan_list}')
+        logging.info(f'Befehl "clan-übersicht" ausgeführt mit {clan_option.value} und {clan_list}')
+        print(f'Befehl "clan-übersicht" ausgeführt mit {clan_option.value} und {clan_list}')
 
         embeds = []
         droplist_options = []
@@ -192,8 +192,8 @@ for guild_id in guild_ids:
         position: int = 0
     ):
         await interaction.response.defer()
-        logging.info(f'Befehl "8point-clans" ausgeführt von {interaction.user} mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
-        print(f'Befehl "8point-clans" ausgeführt von {interaction.user} mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
+        logging.info(f'Befehl "8point-clans" ausgeführt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
+        print(f'Befehl "8point-clans" ausgeführt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
 
         clans = load_clans()
         guild = interaction.guild
@@ -277,8 +277,8 @@ for guild_id in guild_ids:
     async def clan_infos(interaction: discord.Interaction, members: app_commands.Choice[str], aktualisieren: str = "Nein"):
 
         await interaction.response.defer()
-        logging.info(f'Befehl "mitglieder" ausgeführt von {interaction.user} mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
-        print(f'Befehl "mitglieder" ausgeführt von {interaction.user} mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
+        logging.info(f'Befehl "mitglieder" ausgeführt mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
+        print(f'Befehl "mitglieder" ausgeführt mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
 
         view = MemberView()
         if aktualisieren.lower() == "ja":
