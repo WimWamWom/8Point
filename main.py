@@ -6,16 +6,9 @@ from dotenv import load_dotenv
 from bot_def import create_clan_embed, create_list_embed
 from bot_def_clan import get_clan_info, get_clan_name_and_tag, refresh_rolls, load_rolls
 from eight_point_json import load_clans, save_clans
+import json
 
 
-
-log_path = os.path.join(os.path.dirname(__file__), '..', 'log.txt')
-logging.basicConfig(
-    filename=log_path,
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
@@ -27,6 +20,57 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 
+log_dir = os.path.join(os.path.dirname(__file__), 'Logs')
+if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+# Zählt die bestehenden Logdateien und bestimmt den nächsten Namen
+log_files = [f for f in os.listdir(log_dir) if f.startswith('log-') and f.endswith('.txt')]
+log_files.sort()
+
+# Wenn keine Log-Dateien existieren, starte bei log-01
+if not log_files:
+    log_path = os.path.join(log_dir, 'log-01.txt')
+else:
+    # Hole die höchste Zahl und erhöhe sie um 1
+    highest_number = max([int(f.split('-')[1].split('.')[0]) for f in log_files])
+    log_path = os.path.join(log_dir, f'log-{highest_number + 1:02d}.txt')
+
+
+
+logging.basicConfig(
+    filename=log_path,
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+
+
+
+
+# Speichert Kanal- und Nachrichten-ID in einer JSON-Datei
+def save_channel_message_info(channel_id, message_id):
+    data = {}
+    # Versuche, bestehende Daten zu laden
+    if os.path.exists('channel_message_data.json'):
+        with open('channel_message_data.json', 'r') as f:
+            data = json.load(f)
+
+    # Füge Kanal- und Nachrichten-ID hinzu
+    data[channel_id] = message_id
+
+    # Speichere die aktualisierten Daten
+    with open('channel_message_data.json', 'w') as f:
+        json.dump(data, f)
+
+# Lädt die Kanal- und Nachrichten-ID aus der JSON-Datei
+def load_channel_message_info():
+    if os.path.exists('channel_message_data.json'):
+        with open('channel_message_data.json', 'r') as f:
+            return json.load(f)
+    return {}
+
 class ClanSelect(discord.ui.Select):
     def __init__(self, options):
         super().__init__(placeholder="Wähle einen Clan", options=options)
@@ -34,31 +78,40 @@ class ClanSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         clan_tag = self.values[0]
-        
+
         # Logge den Befehl
         logging.info(f'Befehl "ClanSelect" ausgeführt mit Clan: {clan_tag}')
+        
+        # Erhalte die Kanal- und Nachrichten-ID aus der gespeicherten Datei
+        channel_message_info = load_channel_message_info()
+        channel_id = interaction.channel.id
+        if channel_id in channel_message_info:
+            message_id = channel_message_info[channel_id]
+            message = await interaction.channel.fetch_message(message_id)
+        else:
+            message = interaction.message
         
         if clan_tag == "all":
             embeds = []
             for option in self.options[1:]:
                 embed = create_clan_embed(get_clan_info(option.value))
-                embeds.append(embed)    
+                embeds.append(embed)
             
             if embeds:
-                await interaction.message.edit(embeds=embeds, view=self.view)    
+                await message.edit(embeds=embeds, view=self.view)    
             else:
                 await interaction.followup.send("Keine Clan-Informationen gefunden.", ephemeral=True)
 
             self.placeholder = "Alle Clans anzeigen"
-            await interaction.message.edit(view=self.view)
+            await message.edit(view=self.view)
         else:
             clan_info = get_clan_info(clan_tag)
             if clan_info:
                 embed = create_clan_embed(clan_info)
-                await interaction.message.edit(embed=embed, view=self.view)
+                await message.edit(embed=embed, view=self.view)
 
                 self.placeholder = f"Ausgewählter Clan: {clan_info['name']}"
-                await interaction.message.edit(view=self.view)  
+                await message.edit(view=self.view)  
             else:
                 await interaction.followup.send("Clan-Information nicht gefunden.", ephemeral=True)
 
@@ -86,8 +139,16 @@ class MemberSelect(discord.ui.Select):
         # Logge den Befehl
         logging.info(f'Befehl "MemberSelect" ausgeführt mit Rolle: {role}')
         
+        # Erhalte die Kanal- und Nachrichten-ID aus der gespeicherten Datei
+        channel_message_info = load_channel_message_info()
+        channel_id = interaction.channel.id
+        if channel_id in channel_message_info:
+            message_id = channel_message_info[channel_id]
+            message = await interaction.channel.fetch_message(message_id)
+        else:
+            message = interaction.message
+        
         if role == "Alle":
-
             embeds = []
             roles = ["leader", "vize", "elders", "members"]
             for role in roles:
@@ -95,30 +156,30 @@ class MemberSelect(discord.ui.Select):
                 embed = create_list_embed(role.capitalize(), members)
                 embeds.append(embed)
 
-            await interaction.message.edit(embeds=embeds)
+            await message.edit(embeds=embeds)
 
         elif role == "Anführer":
             member = load_rolls("leader")
             embed = create_list_embed("Anführer", member)
-            await interaction.message.edit(embed=embed)
+            await message.edit(embed=embed)
 
         elif role == "Vize Anführer":
             member = load_rolls("vize")
             embed = create_list_embed("Vize Anführer", member)
-            await interaction.message.edit(embed=embed)
+            await message.edit(embed=embed)
 
         elif role == "Älteste":
             member = load_rolls("elders")
             embed = create_list_embed("Älteste", member)
-            await interaction.message.edit(embed=embed)
+            await message.edit(embed=embed)
 
         elif role == "Mitglieder":
             member = load_rolls("members")
             embed = create_list_embed("Mitglieder", member)
-            await interaction.message.edit(embed=embed)
+            await message.edit(embed=embed)
 
         self.placeholder = f"Ausgewählte Rolle: {role}"
-        await interaction.message.edit(view=self.view)
+        await message.edit(view=self.view)
 
 class MemberView(discord.ui.View):
     def __init__(self):
@@ -133,7 +194,8 @@ for guild_id in guild_ids:
         app_commands.Choice(name="Kürzel eingeben (mit  , seperieren)", value="custom")
     ])
     async def clan_infos(interaction: discord.Interaction, clan_option: app_commands.Choice[str], clan_tags: str = None):
-
+        logging.info(f'Befehl "clan-übersicht" ausgeführt mit clan_option: {clan_option.value} und clan_tags: {clan_tags}')
+        
         await interaction.response.defer()
 
         if clan_option.value == "8point":
@@ -191,10 +253,9 @@ for guild_id in guild_ids:
         clan_tag: str = None, 
         position: int = 0
     ):
-        await interaction.response.defer()
         logging.info(f'Befehl "8point-clans" ausgeführt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
-        print(f'Befehl "8point-clans" ausgeführt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
-
+        await interaction.response.defer()
+        
         clans = load_clans()
         guild = interaction.guild
         user = interaction.user
@@ -218,7 +279,6 @@ for guild_id in guild_ids:
 
         
         elif action.value == "add":
-
 
             if role not in user.roles:
                 await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
@@ -248,7 +308,7 @@ for guild_id in guild_ids:
             if role not in user.roles:
                 await interaction.followup.send("❌ Du hast keine Berechtigung, die Befehl zu verwenden.", ephemeral=True)
                 return
-                    
+                 
             if not clan_tag:
                 await interaction.followup.send("Bitte gib ein Clan-Kürzel zum Entfernen an.", ephemeral=True)
                 return
@@ -262,9 +322,9 @@ for guild_id in guild_ids:
 
 
     @tree.command(name="mitglieder", description="Zeige ein Übersicht 8Point Mitglieder.", guild=discord.Object(id=int(guild_id)))
-    @app_commands.describe(members="Wähle aus welche rolle angezeigt werden soll. Und ob die liste vor der Ausgabe aktualisiert werden soll.[Ja / Nein]")
-    @app_commands.choices(members=[
-        app_commands.Choice(name="Alle Mitlglider", value="all"),
+    @app_commands.describe(mitglieder="Wähle aus welche rolle angezeigt werden soll. Und ob die liste vor der Ausgabe aktualisiert werden soll.[Ja / Nein]")
+    @app_commands.choices(mitglieder=[
+        app_commands.Choice(name="Alle Mitlglieder", value="all"),
         app_commands.Choice(name="Anführer", value="leader"),
         app_commands.Choice(name="Vize", value="vize"),
         app_commands.Choice(name="Älteser", value="elder"),
@@ -274,67 +334,63 @@ for guild_id in guild_ids:
         app_commands.Choice(name="Ja", value="Ja"),
         app_commands.Choice(name="Nein", value="Nein")
     ])
-    async def clan_infos(interaction: discord.Interaction, members: app_commands.Choice[str], aktualisieren: str = "Nein"):
+    async def clan_infos(interaction: discord.Interaction, mitglieder: app_commands.Choice[str], aktualisieren: str = "Nein"):
+
+        logging.info(f'Befehl "mitglieder" ausgeführt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
+        print(f'Befehl "mitglieder" ausgeführt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
 
         await interaction.response.defer()
-        logging.info(f'Befehl "mitglieder" ausgeführt mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
-        print(f'Befehl "mitglieder" ausgeführt mit Rolle: {members.value} und aktualisieren: {aktualisieren}')
-
         view = MemberView()
         if aktualisieren.lower() == "ja":
             clans = load_clans()
             refresh_rolls(clans)
 
-        if members.value == "all":
-
+        if mitglieder.value == "all":
             embeds = []
-            member = load_rolls("leader")
-            embed = create_list_embed("Anführer", member)
-            embeds.append(embed)
+            roles = ["leader", "vize", "elders", "members"]
+            for role in roles:
+                mitglieder = load_rolls(role)
+                embed = create_list_embed(role.capitalize(), mitglieder)
+                embeds.append(embed)
 
-        
-            member = load_rolls("vize")
-            embed = create_list_embed("Vize Anführer", member)
-            embeds.append(embed)
 
-            member = load_rolls("elders")
-            embed = create_list_embed("Älteste", member)
-            embeds.append(embed)
-
-            member = load_rolls("members")
-            embed = create_list_embed("Mitglieder", member)
-            embeds.append(embed)
             await interaction.followup.send(embeds=embeds, view= view)
 
-        elif members.value == "leader":
+        elif mitglieder.value == "leader":
             member = load_rolls("leader")
             embed = create_list_embed("Anführer", member)
             await interaction.followup.send(embed=embed, view= view)
 
-        elif members.value == "vize":
+        elif mitglieder.value == "vize":
             member = load_rolls("vize")
             embed = create_list_embed("Vize Anführer", member)
             await interaction.followup.send(embed=embed, view= view)
 
-        elif members.value == "elder":
+        elif mitglieder.value == "elder":
             member = load_rolls("elders")
             embed = create_list_embed("Älteste", member)
             await interaction.followup.send(embed=embed, view= view)
 
-        elif members.value == "member":
+        elif mitglieder.value == "member":
             member = load_rolls("members")
             embed = create_list_embed("Mitglieder", member)
             await interaction.followup.send(embed=embed, view= view)
+
 
 @client.event
 async def on_ready():
-    print("Synchronisiere neue Befehle...")
+
+    logging.info(f'Eingeloggt als {client.user}  \nSynchronisiere neue Befehle...')
+    print(f'Eingeloggt als {client.user}  \nSynchronisiere neue Befehle...')
+
     i = 1
     for guild_id in guild_ids:
             await tree.sync(guild=discord.Object(id=int(guild_id)))
-            print(f"synchronisiert für Server {i}")
+            logging.info(f"Synchronisiert für Server {i}")
+            print(f"Synchronisiert für Server {i}")
             i += 1 
-    print("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
 
+    logging.info("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
+    print("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
 
 client.run(os.getenv('bot_token'))
