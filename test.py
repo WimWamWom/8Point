@@ -2,6 +2,8 @@ import discord
 from discord import app_commands
 import logging
 import os
+import time
+import asyncio
 from dotenv import load_dotenv
 from bot_def import create_clan_embed, create_list_embed
 from bot_def_clan import get_clan_info, get_clan_name_and_tag, refresh_rolls, load_rolls
@@ -26,6 +28,42 @@ intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+cache = {
+    "clans": {},  # {clan_tag: (timestamp, data)}
+    "members": {}  # {role: (timestamp, data)}
+}
+CACHE_TTL = 300  # 5 Minuten
+
+def get_cached_clan_info(tag):
+    if tag in cache["clans"]:
+        timestamp, data = cache["clans"][tag]
+        if time.time() - timestamp < CACHE_TTL:
+            return data
+    
+    data = get_clan_info(tag)
+    cache["clans"][tag] = (time.time(), data)
+    return data
+
+def get_cached_members(role):
+    if role in cache["members"]:
+        timestamp, data = cache["members"][role]
+        if time.time() - timestamp < CACHE_TTL:
+            return data
+    
+    data = load_rolls(role)
+    cache["members"][role] = (time.time(), data)
+    return data
+
+async def refresh_cache():
+    while True:
+        await asyncio.sleep(CACHE_TTL)
+        logging.info("Cache wird aktualisiert...")
+        for tag in load_clans():
+            cache["clans"][tag] = (time.time(), get_clan_info(tag))
+        for role in ["leader", "vize", "elders", "members"]:
+            cache["members"][role] = (time.time(), load_rolls(role))
+        logging.info("Cache erfolgreich aktualisiert.")
+        print("Cache erfolgreich aktualisiert.")
 
 class ClanSelect(discord.ui.Select):
     def __init__(self, options):
@@ -41,7 +79,7 @@ class ClanSelect(discord.ui.Select):
         if clan_tag == "all":
             embeds = []
             for option in self.options[1:]:
-                embed = create_clan_embed(get_clan_info(option.value))
+                embed = create_clan_embed(get_cached_clan_info(option.value))
                 embeds.append(embed)    
             
             if embeds:
@@ -52,7 +90,7 @@ class ClanSelect(discord.ui.Select):
             self.placeholder = "Alle Clans anzeigen"
             await interaction.message.edit(view=self.view)
         else:
-            clan_info = get_clan_info(clan_tag)
+            clan_info = get_cached_clan_info(clan_tag)
             if clan_info:
                 embed = create_clan_embed(clan_info)
                 await interaction.message.edit(embed=embed, view=self.view)
@@ -91,29 +129,29 @@ class MemberSelect(discord.ui.Select):
             embeds = []
             roles = ["leader", "vize", "elders", "members"]
             for role in roles:
-                members = load_rolls(role)
+                members = get_cached_members(role)
                 embed = create_list_embed(role.capitalize(), members)
                 embeds.append(embed)
 
             await interaction.message.edit(embeds=embeds)
 
         elif role == "Anführer":
-            member = load_rolls("leader")
+            member = get_cached_members("leader")
             embed = create_list_embed("Anführer", member)
             await interaction.message.edit(embed=embed)
 
         elif role == "Vize Anführer":
-            member = load_rolls("vize")
+            member = get_cached_members("vize")
             embed = create_list_embed("Vize Anführer", member)
             await interaction.message.edit(embed=embed)
 
         elif role == "Älteste":
-            member = load_rolls("elders")
+            member = get_cached_members("elders")
             embed = create_list_embed("Älteste", member)
             await interaction.message.edit(embed=embed)
 
         elif role == "Mitglieder":
-            member = load_rolls("members")
+            member = get_cached_members("members")
             embed = create_list_embed("Mitglieder", member)
             await interaction.message.edit(embed=embed)
 
@@ -153,7 +191,7 @@ for guild_id in guild_ids:
             droplist_options.append(discord.SelectOption(label="Alle Clans anzeigen", value="all"))
 
         for tag in clan_list:
-            clan_info = get_clan_info(tag)
+            clan_info = get_cached_clan_info(tag)
             if clan_info:
                 embeds.append(create_clan_embed(clan_info))
                 name = get_clan_name_and_tag(tag)
@@ -285,44 +323,34 @@ for guild_id in guild_ids:
             clans = load_clans()
             refresh_rolls(clans)
 
-        if members.value == "all":
+        if role == "all":
 
             embeds = []
-            member = load_rolls("leader")
-            embed = create_list_embed("Anführer", member)
-            embeds.append(embed)
+            roles = ["leader", "vize", "elders", "members"]
+            for role in roles:
+                members = get_cached_members(role)
+                embed = create_list_embed(role.capitalize(), members)
+                embeds.append(embed)
 
-        
-            member = load_rolls("vize")
-            embed = create_list_embed("Vize Anführer", member)
-            embeds.append(embed)
-
-            member = load_rolls("elders")
-            embed = create_list_embed("Älteste", member)
-            embeds.append(embed)
-
-            member = load_rolls("members")
-            embed = create_list_embed("Mitglieder", member)
-            embeds.append(embed)
             await interaction.followup.send(embeds=embeds, view= view)
 
         elif members.value == "leader":
-            member = load_rolls("leader")
+            member = get_cached_members("leader")
             embed = create_list_embed("Anführer", member)
             await interaction.followup.send(embed=embed, view= view)
 
         elif members.value == "vize":
-            member = load_rolls("vize")
+            member = get_cached_members("vize")
             embed = create_list_embed("Vize Anführer", member)
             await interaction.followup.send(embed=embed, view= view)
 
         elif members.value == "elder":
-            member = load_rolls("elders")
+            member = get_cached_members("elders")
             embed = create_list_embed("Älteste", member)
             await interaction.followup.send(embed=embed, view= view)
 
         elif members.value == "member":
-            member = load_rolls("members")
+            member = get_cached_members("members")
             embed = create_list_embed("Mitglieder", member)
             await interaction.followup.send(embed=embed, view= view)
 
@@ -335,6 +363,6 @@ async def on_ready():
             print(f"synchronisiert für Server {i}")
             i += 1 
     print("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")
-
+    client.loop.create_task(refresh_cache())
 
 client.run(os.getenv('bot_token'))
