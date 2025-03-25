@@ -80,7 +80,7 @@ class ClanSelect(discord.ui.Select):
         clan_tag = self.values[0]
 
         # Logge den Befehl
-        logging.info(f'Befehl "ClanSelect" ausgeführt mit Clan: {clan_tag}')
+        logging.info(f'Befehl "ClanSelect" ausgefuehrt mit Clan: {clan_tag}')
         
         # Erhalte die Kanal- und Nachrichten-ID aus der gespeicherten Datei
         channel_message_info = load_channel_message_info()
@@ -137,7 +137,7 @@ class MemberSelect(discord.ui.Select):
         role = self.values[0]
 
         # Logge den Befehl
-        logging.info(f'Befehl "MemberSelect" ausgeführt mit Rolle: {role}')
+        logging.info(f'Befehl "MemberSelect" ausgefuehrt mit Rolle: {role}')
         
         # Erhalte die Kanal- und Nachrichten-ID aus der gespeicherten Datei
         channel_message_info = load_channel_message_info()
@@ -194,7 +194,7 @@ for guild_id in guild_ids:
         app_commands.Choice(name="Kürzel eingeben (mit  , seperieren)", value="custom")
     ])
     async def clan_infos(interaction: discord.Interaction, clan_option: app_commands.Choice[str], clan_tags: str = None):
-        logging.info(f'Befehl "clan-übersicht" ausgeführt mit clan_option: {clan_option.value} und clan_tags: {clan_tags}')
+        logging.info(f'Befehl "clan-übersicht" ausgefuehrt mit clan_option: {clan_option.value} und clan_tags: {clan_tags}')
         
         await interaction.response.defer()
 
@@ -206,8 +206,8 @@ for guild_id in guild_ids:
                 return
             clan_list = [tag.strip() for tag in clan_tags.split(",")]
 
-        logging.info(f'Befehl "clan-übersicht" ausgeführt mit {clan_option.value} und {clan_list}')
-        print(f'Befehl "clan-übersicht" ausgeführt mit {clan_option.value} und {clan_list}')
+        logging.info(f'Befehl "clan-übersicht" ausgefuehrt mit {clan_option.value} und {clan_list}')
+        print(f'Befehl "clan-übersicht" ausgefuehrt mit {clan_option.value} und {clan_list}')
 
         embeds = []
         droplist_options = []
@@ -253,7 +253,7 @@ for guild_id in guild_ids:
         clan_tag: str = None, 
         position: int = 0
     ):
-        logging.info(f'Befehl "8point-clans" ausgeführt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
+        logging.info(f'Befehl "8point-clans" ausgefuehrt mit action: {action.value}, clan_tag: {clan_tag} und position: {position}')
         await interaction.response.defer()
         
         clans = load_clans()
@@ -336,8 +336,8 @@ for guild_id in guild_ids:
     ])
     async def clan_infos(interaction: discord.Interaction, mitglieder: app_commands.Choice[str], aktualisieren: str = "Nein"):
 
-        logging.info(f'Befehl "mitglieder" ausgeführt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
-        print(f'Befehl "mitglieder" ausgeführt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
+        logging.info(f'Befehl "mitglieder" ausgefuehrt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
+        print(f'Befehl "mitglieder" ausgefuehrt mit Rolle: {mitglieder.value} und aktualisieren: {aktualisieren}')
 
         await interaction.response.defer()
         view = MemberView()
@@ -386,8 +386,8 @@ async def on_ready():
     i = 1
     for guild_id in guild_ids:
             await tree.sync(guild=discord.Object(id=int(guild_id)))
-            logging.info(f"Synchronisiert für Server {i}")
-            print(f"Synchronisiert für Server {i}")
+            logging.info(f"Synchronisiert Server {i}")
+            print(f"Synchronisiert Server {i}")
             i += 1 
 
     logging.info("Befehle wurden Synchronisiert! \n============================== \nDer Bot ist Bereit!")

@@ -1,0 +1,13 @@
+2025-03-25 10:46:26 - logging in using static token
+2025-03-25 10:46:27 - Shard ID None has connected to Gateway (Session ID: 7b36da51466a3c601045fac5a94c83d5).
+2025-03-25 10:46:29 - Eingeloggt als 8Point#8406  
+Synchronisiere neue Befehle...
+2025-03-25 10:46:29 - Synchronisiert Server 1
+2025-03-25 10:46:30 - Synchronisiert Server 2
+2025-03-25 10:46:30 - Befehle wurden Synchronisiert! 
+============================== 
+Der Bot ist Bereit!
+2025-03-25 11:05:12 - Shard ID None has successfully RESUMED session 7b36da51466a3c601045fac5a94c83d5.
+2025-03-25 13:11:55 - Befehl "mitglieder" ausgefuehrt mit Rolle: all und aktualisieren: Ja
+2025-03-25 13:16:23 - Shard ID None has successfully RESUMED session 7b36da51466a3c601045fac5a94c83d5.
+2025-03-25 14:27:19 - Shard ID None has successfully RESUMED session 7b36da51466a3c601045fac5a94c83d5.
