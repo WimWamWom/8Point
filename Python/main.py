@@ -10,7 +10,7 @@ import json
 
 
 
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 load_dotenv(dotenv_path)
 guild_ids_str = str(os.getenv('guildIDs'))
 guild_ids = guild_ids_str.split(',')

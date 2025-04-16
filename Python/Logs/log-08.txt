@@ -1,0 +1,11 @@
+2025-04-16 13:24:21 - logging in using static token
+2025-04-16 13:24:22 - Shard ID None has connected to Gateway (Session ID: c23757737be30180018de9cc570479ca).
+2025-04-16 13:24:24 - Eingeloggt als 8Point#8406  
+Synchronisiere neue Befehle...
+2025-04-16 13:24:24 - Synchronisiert Server 1
+2025-04-16 13:24:25 - Synchronisiert Server 2
+2025-04-16 13:24:25 - Befehle wurden Synchronisiert! 
+============================== 
+Der Bot ist Bereit!
+2025-04-16 13:24:37 - Befehl "clan-übersicht" ausgefuehrt mit clan_option: 8point und clan_tags: None
+2025-04-16 13:24:37 - Befehl "clan-übersicht" ausgefuehrt mit 8point und ['#298QPUCCC', '#2Q209882J', '#80QLG202', '#2RJVCG0LL', '#P9VQG89U']
