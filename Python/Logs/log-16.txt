@@ -1,0 +1,30 @@
+2025-05-26 14:21:52 - logging in using static token
+2025-05-26 14:21:53 - Shard ID None has connected to Gateway (Session ID: 1e3a5edb821d78ca79cb88e1d23b317d).
+2025-05-26 14:21:55 - Eingeloggt als 8Point#8406 – synchronisiere Befehle...
+2025-05-26 14:21:56 - Synchronisiert Server 1
+2025-05-26 14:21:56 - Synchronisiert Server 2
+2025-05-26 14:21:56 - Alle Befehle synchronisiert. Bot ist bereit!
+2025-05-26 14:22:07 - 8point-clans ausgeführt mit action=show, tag=None, pos=0
+2025-05-26 14:22:08 - Ignoring exception in command '8point-clans'
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\Desktop\Git\8Point\Python\main.py", line 223, in manage_8point_clans
+    name_tag = get_clan_name_and_tag(tag)
+  File "C:\Users\wroehner\Desktop\Git\8Point\Python\bot_def_clan.py", line 94, in get_clan_name_and_tag
+    clan_name_and_tag = f"{clan_info['name']} ({clan_info['tag']})"
+                           ~~~~~~~~~^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 872, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command '8point-clans' raised an exception: TypeError: 'NoneType' object is not subscriptable

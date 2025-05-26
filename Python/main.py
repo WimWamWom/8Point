@@ -270,7 +270,7 @@ for guild_id in guild_ids:
             for tag in clans:
                 clan_name_and_tag = get_clan_name_and_tag(tag)  # Holt den Clan-Namen anhand des Tags
                 if clan_name_and_tag:
-                    clan_list.append(clan_name_and_tag  )  # Format: Name (#Kürzel)
+                    clan_list.append(clan_name_and_tag )  # Format: Name (#Kürzel)
                 else:
                     clan_list.append(tag)  # Falls kein Name gefunden wird, nur das Kürzel anzeigen
 
@@ -328,7 +328,7 @@ for guild_id in guild_ids:
         app_commands.Choice(name="Anführer", value="leader"),
         app_commands.Choice(name="Vize", value="vize"),
         app_commands.Choice(name="Älteser", value="elder"),
-        app_commands.Choice(name="Mitlgied", value="member"),
+        app_commands.Choice(name="Mitglied", value="member"),
     ],
         aktualisieren =[
         app_commands.Choice(name="Ja", value="Ja"),

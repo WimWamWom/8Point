@@ -1,0 +1,64 @@
+2025-05-26 14:17:39 - logging in using static token
+2025-05-26 14:17:41 - Shard ID None has connected to Gateway (Session ID: 53a80f0b9ff768faaa49c46e3fa1c478).
+2025-05-26 14:17:43 - Eingeloggt als 8Point#8406  
+Synchronisiere neue Befehle...
+2025-05-26 14:17:43 - Synchronisiert Server 1
+2025-05-26 14:17:43 - Synchronisiert Server 2
+2025-05-26 14:17:43 - Befehle wurden Synchronisiert! 
+============================== 
+Der Bot ist Bereit!
+2025-05-26 14:17:52 - Befehl "8point-clans" ausgefuehrt mit action: show, clan_tag: None und position: 0
+2025-05-26 14:17:53 - Ignoring exception in command '8point-clans'
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\Desktop\Git\8Point\Python\main.py", line 271, in manage_8point_clans
+    clan_name_and_tag = get_clan_name_and_tag(tag)  # Holt den Clan-Namen anhand des Tags
+  File "C:\Users\wroehner\Desktop\Git\8Point\Python\bot_def_clan.py", line 94, in get_clan_name_and_tag
+    clan_name_and_tag = f"{clan_info['name']} ({clan_info['tag']})"
+                           ~~~~~~~~~^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 872, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command '8point-clans' raised an exception: TypeError: 'NoneType' object is not subscriptable
+2025-05-26 14:18:05 - Befehl "clan-übersicht" ausgefuehrt mit clan_option: 8point und clan_tags: None
+2025-05-26 14:18:05 - Befehl "clan-übersicht" ausgefuehrt mit 8point und ['#298QPUCCC', '#2Q209882J', '#80QLG202', '#2RJVCG0LL', '#P9VQG89U']
+2025-05-26 14:18:36 - Befehl "mitglieder" ausgefuehrt mit Rolle: all und aktualisieren: Nein
+2025-05-26 14:18:43 - Ignoring exception in command 'mitglieder'
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\Desktop\Git\8Point\Python\main.py", line 342, in clan_infos
+    await interaction.response.defer()
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\interactions.py", line 844, in defer
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\webhook\async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\wroehner\AppData\Local\Programs\Python\Python313\Lib\site-packages\discord\app_commands\commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'mitglieder' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
