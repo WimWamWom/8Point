@@ -1,21 +1,39 @@
 import requests
 import os
 import json
+import logging
 from dotenv import load_dotenv
-import os
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 load_dotenv(dotenv_path)
+# Fallback: auch lokale .env im Python-Ordner laden, falls oben nicht vorhanden
+if not os.getenv('API'):
+    local_env = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(local_env):
+        load_dotenv(local_env)
 
 API = os.getenv('API')
+if not API:
+    logging.error("Clash of Clans API-Token (API) ist nicht gesetzt. Bitte .env konfigurieren.")
 
 def get_clan_info(clan_tag):
+    # Tag normalisieren: '#' entfernen, Leerzeichen trimmen
+    try:
+        sanitized_tag = str(clan_tag).strip()
+        if sanitized_tag.startswith('#'):
+            sanitized_tag = sanitized_tag[1:]
+    except Exception:
+        return None
 
-    url = f"https://api.clashofclans.com/v1/clans/%23{clan_tag[1:]}"
+    url = f"https://api.clashofclans.com/v1/clans/%23{sanitized_tag}"
     headers = {
         'Authorization': f'Bearer {API}'
     }
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+    except Exception as e:
+        logging.error(f"HTTP-Fehler beim Abrufen der Clan-Daten für #{sanitized_tag}: {e}")
+        return None
 
     if response.status_code == 200:
         data = response.json()
@@ -87,12 +105,20 @@ def get_clan_info(clan_tag):
             "trophies": trophies,
             "leader": leader,
         }
-    return None
+    else:
+        # Nützliche Fehlermeldung loggen
+        try:
+            payload = response.json()
+        except Exception:
+            payload = response.text
+        logging.error(f"Clash API {response.status_code} für Clan #{sanitized_tag}: {payload}")
+        return None
 
 def get_clan_name_and_tag(clan):
-    clan_info = get_clan_info(clan)      
-    clan_name_and_tag = f"{clan_info['name']} ({clan_info['tag']})"
-    return clan_name_and_tag
+    clan_info = get_clan_info(clan)
+    if not clan_info:
+        return None
+    return f"{clan_info['name']} ({clan_info['tag']})"
 
 def refresh_rolls(clan_list):
     all_leaders = []
